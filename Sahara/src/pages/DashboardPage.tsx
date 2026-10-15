@@ -247,7 +247,10 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
     green: 'bg-green-100 text-green-600',
   };
 
-  const isTransfer = selectedReservation?.serviceId === 'private-transfer';
+  const effectiveServiceId = isEditing && selectedReservation
+    ? (editForm.serviceId ?? selectedReservation.serviceId)
+    : selectedReservation?.serviceId;
+  const isTransfer = effectiveServiceId === 'private-transfer';
 
   const nextReservationId = `RES-${String(2411 + reservations.filter(r => !initialReservations.some(ir => ir.id === r.id)).length).padStart(4, '0')}`;
 
@@ -260,6 +263,7 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
     if (!selectedReservation) return;
     setEditForm({
       clientName: selectedReservation.clientName,
+      serviceId: selectedReservation.serviceId,
       date: selectedReservation.date,
       people: selectedReservation.people,
       contactMethod: selectedReservation.contactMethod,
@@ -269,13 +273,25 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
     setIsEditing(true);
   };
 
+  const handleEditServiceChange = (newServiceId: string) => {
+    if (!selectedReservation) return;
+    setEditForm((prev) => ({ ...prev, serviceId: newServiceId }));
+    setPartnerAssignment((prev) => ({
+      ...prev,
+      [selectedReservation.id]: { hostId: null, driverId: null, guideId: null },
+    }));
+  };
+
   const handleSaveEdit = () => {
     if (!selectedReservation || !editForm.clientName?.trim()) return;
-    const service = services.find((s) => s.id === selectedReservation.serviceId);
+    const newServiceId = editForm.serviceId ?? selectedReservation.serviceId;
+    const service = services.find((s) => s.id === newServiceId);
     const people = editForm.people ?? selectedReservation.people;
     const totalPrice = service ? service.price * people : selectedReservation.totalPrice;
     const updated: Reservation = {
       ...selectedReservation,
+      serviceId: newServiceId,
+      serviceTitle: service ? service.title : selectedReservation.serviceTitle,
       clientName: editForm.clientName.trim(),
       date: editForm.date ?? selectedReservation.date,
       people,
@@ -287,7 +303,7 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
     setReservations((prev) => prev.map((r) => (r.id === selectedReservation.id ? updated : r)));
     setTrips((prev) => prev.map((t) =>
       t.reservationId === selectedReservation.id
-        ? { ...t, clientName: updated.clientName, date: updated.date, people: updated.people, totalPrice: updated.totalPrice }
+        ? { ...t, serviceTitle: updated.serviceTitle, clientName: updated.clientName, date: updated.date, people: updated.people, totalPrice: updated.totalPrice }
         : t
     ));
     setSelectedReservation(updated);
@@ -771,9 +787,20 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
               <div className="mb-6">
                 <h3 className="text-xs font-semibold text-sand-500 uppercase tracking-wider mb-3">Service</h3>
                 <div className="bg-sand-50 rounded-xl p-4">
-                  <div className="font-semibold text-sand-900 mb-1">{selectedReservation.serviceTitle}</div>
                   {isEditing ? (
-                    <div className="space-y-3 mt-3">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-sand-600 mb-1.5">Service</label>
+                        <select
+                          value={editForm.serviceId ?? selectedReservation.serviceId}
+                          onChange={(e) => handleEditServiceChange(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-sand-300 bg-white text-sand-900 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+                        >
+                          {services.map((s) => (
+                            <option key={s.id} value={s.id}>{s.title}</option>
+                          ))}
+                        </select>
+                      </div>
                       <div>
                         <label className="block text-xs font-medium text-sand-600 mb-1.5">Assigned To</label>
                         <select
@@ -812,7 +839,7 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
                         <span className="text-xs text-sand-500">Total (auto-calculated)</span>
                         <span className="font-bold text-terracotta-600">
                           ${(() => {
-                            const svc = services.find((s) => s.id === selectedReservation.serviceId);
+                            const svc = services.find((s) => s.id === (editForm.serviceId ?? selectedReservation.serviceId));
                             return svc ? svc.price * (editForm.people ?? selectedReservation.people) : selectedReservation.totalPrice;
                           })()}
                         </span>
@@ -840,15 +867,15 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
                     <PartnerSelect
                       type="host"
                       label="Assign Host"
-                      serviceId={selectedReservation.serviceId}
+                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).hostId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'host', id)}
-                      required={!isTransfer}
+                      required={!(isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId) === 'private-transfer'}
                     />
                     <PartnerSelect
                       type="driver"
                       label="Assign Driver"
-                      serviceId={selectedReservation.serviceId}
+                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).driverId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'driver', id)}
                       required
@@ -856,7 +883,7 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
                     <PartnerSelect
                       type="guide"
                       label="Assign Tourist Guide (Optional)"
-                      serviceId={selectedReservation.serviceId}
+                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).guideId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'guide', id)}
                     />
