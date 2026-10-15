@@ -867,15 +867,15 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
                     <PartnerSelect
                       type="host"
                       label="Assign Host"
-                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
+                      serviceId={effectiveServiceId ?? selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).hostId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'host', id)}
-                      required={!(isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId) === 'private-transfer'}
+                      required={!isTransfer}
                     />
                     <PartnerSelect
                       type="driver"
                       label="Assign Driver"
-                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
+                      serviceId={effectiveServiceId ?? selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).driverId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'driver', id)}
                       required
@@ -883,7 +883,7 @@ export default function DashboardPage({ onNavigate, onLogout }: DashboardPagePro
                     <PartnerSelect
                       type="guide"
                       label="Assign Tourist Guide (Optional)"
-                      serviceId={isEditing ? (editForm.serviceId ?? selectedReservation.serviceId) : selectedReservation.serviceId}
+                      serviceId={effectiveServiceId ?? selectedReservation.serviceId}
                       selectedId={getAssignment(selectedReservation.id).guideId}
                       onSelect={(id) => setAssignment(selectedReservation.id, 'guide', id)}
                     />
