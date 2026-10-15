@@ -1,7 +1,6 @@
 import { Users, CalendarDays, DollarSign, Building2, Car, MapPin, ChevronRight } from 'lucide-react';
 import type { Trip } from '../data/mockData';
 import { partners, statusConfig } from '../data/mockData';
-import type { PartnerType } from '../data/mockData';
 
 interface TripsListProps {
   trips: Trip[];
